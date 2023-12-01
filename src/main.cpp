@@ -2,7 +2,9 @@
 #include <Geode/modify/ProfilePage.hpp>
 #include <Geode/modify/FriendsProfilePage.hpp>
 #include <Geode/modify/InfoLayer.hpp>
+#include <Geode/ui/Popup.hpp>
 #include <Geode/modify/GJCommentListLayer.hpp>
+
 using namespace geode::prelude;
 
 class $modify(ProfilePage) {
@@ -20,7 +22,6 @@ class $modify(ProfilePage) {
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
-		gradient->changeWidthAndHeight(569, 320);
 		gradient->setZOrder(-1);
 		gradient->setID("gradient"_spr);
 		gradient->setOpacity(0);
@@ -29,8 +30,9 @@ class $modify(ProfilePage) {
 		gradient->setContentSize(ccp(440, 290));
 		gradient->ignoreAnchorPointForPosition(false);
 
-		auto bg = CCSprite::createWithSpriteFrameName("profile-parts.png"_spr);
+		auto bg = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
 		bg->setPosition(CCDirector::get()->getWinSize() / 2);
+		bg->setContentSize(ccp(440, 290));
 		bg->setZOrder(1);
 		bg->setID("bg"_spr);
 
@@ -101,7 +103,6 @@ class $modify(FriendsProfilePage) {
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
-		gradient->changeWidthAndHeight(569, 320);
 		gradient->setZOrder(-1);
 		gradient->setID("gradient"_spr);
 
@@ -109,8 +110,9 @@ class $modify(FriendsProfilePage) {
 		gradient->setContentSize(ccp(440, 290));
 		gradient->ignoreAnchorPointForPosition(false);
 
-		auto bg = CCSprite::createWithSpriteFrameName("profile-parts.png"_spr);
+		auto bg = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
 		bg->setPosition(CCDirector::get()->getWinSize() / 2);
+		bg->setContentSize(ccp(440, 290));
 		bg->setZOrder(1);
 		bg->setID("bg"_spr);
 
@@ -143,7 +145,6 @@ class $modify(InfoLayer) {
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
-		gradient->changeWidthAndHeight(569, 320);
 		gradient->setZOrder(-2);
 		gradient->setID("gradient"_spr);
 
@@ -151,8 +152,9 @@ class $modify(InfoLayer) {
 		gradient->setContentSize(ccp(440, 290));
 		gradient->ignoreAnchorPointForPosition(false);
 
-		auto bg = CCSprite::createWithSpriteFrameName("profile-parts.png"_spr);
+		auto bg = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
 		bg->setPosition(CCDirector::get()->getWinSize() / 2);
+		bg->setContentSize(ccp(440, 290));
 		bg->setZOrder(1);
 		bg->setID("bg"_spr);
 
@@ -176,6 +178,11 @@ class $modify(InfoLayer) {
 		return a;
 	}
 
+};
+
+class $modify (geode::Popup<std::string>)
+{
+	
 };
 
 class $modify (GJCommentListLayer)
