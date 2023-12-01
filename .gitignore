@@ -41,6 +41,7 @@
 
 # Ignore build folders
 **/build
+**/Gradient-Pages
 **/vs/
 **/out/
 
