@@ -180,10 +180,10 @@ class $modify(InfoLayer) {
 
 };
 
-class $modify (geode::Popup<std::string>)
+/*class $modify (geode::Popup<std::string>)
 {
 	
-};
+};*/
 
 class $modify (GJCommentListLayer)
 {
