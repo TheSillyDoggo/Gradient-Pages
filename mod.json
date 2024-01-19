@@ -54,6 +54,9 @@
             "type": "color",
             "default": "#7efeb0"
         }
-	}
+	},
+	"tags":	[
+		"Customization"
+	]
 
 }
