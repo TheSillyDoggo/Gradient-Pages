@@ -1,6 +1,14 @@
 {
 	"geode": "2.0.0",
+<<<<<<< Updated upstream
 	"version": "v1.0.0",
+=======
+	"gd": {
+		"win": "2.204",
+		"android": "2.200"
+	},
+	"version": "v1.1.0",
+>>>>>>> Stashed changes
 	"id": "TheSillyDoggo.GradientPages",
 	"name": "Gradient Pages",
 	"developer": "TheSillyDoggo",
@@ -15,17 +23,45 @@
 	},
 	"settings": {
         "apply-profiles": {
-            "name": "Profiles",
+            "name": "Apply to Profiles",
             "description": "Should it apply a gradient to profile pages?",
             "type": "bool",
             "default": true
         },
 		"apply-info-layer": {
-            "name": "Level Description",
+            "name": "Apply to Level Description",
             "description": "Should it apply a gradient to the level description?",
             "type": "bool",
             "default": true
+        },
+		"reverse-order": {
+            "name": "Reverse Order",
+            "description": "Reverses the order of the gradient vertically",
+            "type": "bool",
+            "default": false
+        },
+		"use-custom-colours": {
+            "name": "Use Custom Colours",
+            "description": "Should it use colours of your choice instead of your player colours?",
+            "type": "bool",
+            "default": false
+        },
+		"primary-colour": {
+            "name": "Primary Colour",
+			"description": "The Colour used at the top of pages that aren't profiles",
+            "type": "color",
+            "default": "#7d7cff"
+        },
+		"secondary-colour": {
+            "name": "Secondary Colour",
+			"description": "The Colour used at the bottom of pages that aren't profiles",
+            "type": "color",
+            "default": "#7efeb0"
         }
 	}
+<<<<<<< Updated upstream
 
 }
+=======
+}
+>>>>>>> Stashed changes
