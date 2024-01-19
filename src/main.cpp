@@ -1,11 +1,20 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/ProfilePage.hpp>
 #include <Geode/modify/FriendsProfilePage.hpp>
+#include <Geode/modify/FRequestProfilePage.hpp>
+#include <Geode/modify/MessagesProfilePage.hpp>
+#include <Geode/modify/LevelInfoLayer.hpp>
 #include <Geode/modify/InfoLayer.hpp>
-#include <Geode/ui/Popup.hpp>
 #include <Geode/modify/GJCommentListLayer.hpp>
+#include <Geode/modify/GJAccountSettingsLayer.hpp>
 
 using namespace geode::prelude;
+
+class GradientPages
+{
+	public:
+		static inline GJUserScore* score = nullptr;
+};
 
 class $modify(ProfilePage) {
 
@@ -15,6 +24,14 @@ class $modify(ProfilePage) {
 
 		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
 			return a;
+
+		if (GradientPages::score)
+		{
+			if (GradientPages::score->m_accountID != accountID)
+			{
+				GradientPages::score = nullptr;
+			}
+		}
 
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
 
@@ -30,6 +47,17 @@ class $modify(ProfilePage) {
 		gradient->setContentSize(ccp(440, 290));
 		gradient->ignoreAnchorPointForPosition(false);
 
+		if (Mod::get()->getSettingValue<bool>("reverse-order"))
+			gradient->setScaleY(-1);
+
+		auto darken = CCScale9Sprite::createWithSpriteFrameName("square-fill.png"_spr);
+		darken->setID("darken"_spr);
+		darken->setContentSize(gradient->getContentSize() - ccp(15, 15));
+		darken->setZOrder(0);
+		darken->setPosition(gradient->getPosition());
+		darken->setAnchorPoint(gradient->getAnchorPoint());
+		darken->setOpacity(0);
+
 		auto bg = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
 		bg->setPosition(CCDirector::get()->getWinSize() / 2);
 		bg->setContentSize(ccp(440, 290));
@@ -37,18 +65,20 @@ class $modify(ProfilePage) {
 		bg->setID("bg"_spr);
 
 		l->addChild(bg);
+		l->addChild(darken);
 		l->addChild(gradient);
-
-		if (m_score == nullptr)
+		
+		if (GradientPages::score == nullptr)
 		{
 			log::info("hasn't loaded profile info yet :(");
 		}
 		else
 		{
-			gradient->setStartColor(GameManager::get()->colorForIdx(m_score->getPlayerColor1()));
-			gradient->setEndColor(GameManager::get()->colorForIdx(m_score->getPlayerColor2()));
+			gradient->setStartColor(GameManager::get()->colorForIdx(GradientPages::score->m_color1));
+			gradient->setEndColor(GameManager::get()->colorForIdx(GradientPages::score->m_color2));
 
 			gradient->setOpacity(255);
+			darken->setOpacity(255);
 			bg->setOpacity(255);
 		}
 
@@ -57,6 +87,8 @@ class $modify(ProfilePage) {
 
 	virtual void loadPageFromUserInfo(GJUserScore* score)
 	{
+		GradientPages::score = score;
+
 		ProfilePage::loadPageFromUserInfo(score);
 
 		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
@@ -64,23 +96,32 @@ class $modify(ProfilePage) {
 
 		log::info("loadPageFromUserInfo");
 
-		log::info("colour 1: {}", score->getPlayerColor1());
-		log::info("colour 2: {}", score->getPlayerColor2());
+		log::info("colour 1: {}", score->m_color1);
+		log::info("colour 2: {}", score->m_color2);
 		
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
 
-		if (l != nullptr)
+		if (l)
 		{
 			auto g = reinterpret_cast<CCLayerGradient*>(l->getChildByID("gradient"_spr));
+			auto d = reinterpret_cast<CCScale9Sprite*>(l->getChildByID("darken"_spr));
 
-			if (g != nullptr)
+			if (g)
 			{
-				g->setStartColor(GameManager::get()->colorForIdx(score->getPlayerColor1()));
-				g->setEndColor(GameManager::get()->colorForIdx(score->getPlayerColor2()));
+				g->setStartColor(GameManager::get()->colorForIdx(score->m_color1));
+				g->setEndColor(GameManager::get()->colorForIdx(score->m_color2));
 				
 				if (g->getOpacity() == 0)
 				{
 					g->runAction(CCFadeIn::create(0.25f));
+				}
+
+				if (d)
+				{
+					if (d->getOpacity() == 0)
+					{
+						d->runAction(CCFadeIn::create(0.25f));					
+					}
 				}
 			}
 		}
@@ -88,14 +129,70 @@ class $modify(ProfilePage) {
 
 };
 
-class $modify(FriendsProfilePage) {
-
-	bool init(UserListType p0)
+class $modify (GJAccountSettingsLayer)
+{
+	bool init(int idk)
 	{
-		bool a = FriendsProfilePage::init(p0);
+		if (!GJAccountSettingsLayer::init(idk))
+			return false;
 
 		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
-			return a;
+			return true;
+
+		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		l->sortAllChildren();
+		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
+
+		auto gradient = CCLayerGradient::create();
+		
+		gradient->setStartColor({255, 0, 0});
+		gradient->setEndColor({0, 255, 0});
+		gradient->setZOrder(-3);
+		gradient->setID("gradient"_spr);
+
+		gradient->setPosition(CCDirector::get()->getWinSize() / 2);
+		gradient->setContentSize(ccp(400, 300));
+		gradient->ignoreAnchorPointForPosition(false);
+
+		if (Mod::get()->getSettingValue<bool>("reverse-order"))
+			gradient->setScaleY(-1);
+
+		auto darken = CCScale9Sprite::createWithSpriteFrameName("square-fill.png"_spr);
+		darken->setID("darken"_spr);
+		darken->setContentSize(gradient->getContentSize() - ccp(15, 15));
+		darken->setZOrder(-2);
+		darken->setPosition(gradient->getPosition());
+		darken->setAnchorPoint(gradient->getAnchorPoint());
+
+		auto bg = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
+		bg->setPosition(CCDirector::get()->getWinSize() / 2);
+		bg->setContentSize(gradient->getContentSize());
+		bg->setZOrder(1);
+		bg->setID("bg"_spr);
+
+		l->addChild(bg);
+		l->addChild(darken);
+		l->addChild(gradient);
+
+		gradient->setStartColor(GameManager::get()->colorForIdx(GameManager::get()->m_playerColor.value()));
+		gradient->setEndColor(GameManager::get()->colorForIdx(GameManager::get()->m_playerColor2.value()));
+
+		gradient->setOpacity(255);
+		bg->setOpacity(255);
+
+		return true;
+	}
+};
+
+class $modify(FRequestProfilePage) {
+
+	bool init(bool p0)
+	{
+		if (!FRequestProfilePage::init(p0))
+			return false;
+
+		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
+			return true;
 
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
 
@@ -110,6 +207,16 @@ class $modify(FriendsProfilePage) {
 		gradient->setContentSize(ccp(440, 290));
 		gradient->ignoreAnchorPointForPosition(false);
 
+		if (Mod::get()->getSettingValue<bool>("reverse-order"))
+			gradient->setScaleY(-1);
+
+		auto darken = CCScale9Sprite::createWithSpriteFrameName("square-fill.png"_spr);
+		darken->setID("darken"_spr);
+		darken->setContentSize(gradient->getContentSize() - ccp(15, 15));
+		darken->setZOrder(0);
+		darken->setPosition(gradient->getPosition());
+		darken->setAnchorPoint(gradient->getAnchorPoint());
+
 		auto bg = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
 		bg->setPosition(CCDirector::get()->getWinSize() / 2);
 		bg->setContentSize(ccp(440, 290));
@@ -117,27 +224,143 @@ class $modify(FriendsProfilePage) {
 		bg->setID("bg"_spr);
 
 		l->addChild(bg);
+		l->addChild(darken);
 		l->addChild(gradient);
 
-		gradient->setStartColor(GameManager::get()->colorForIdx(GameManager::get()->getPlayerColor()));
-		gradient->setEndColor(GameManager::get()->colorForIdx(GameManager::get()->getPlayerColor2()));
+		gradient->setStartColor(GameManager::get()->colorForIdx(GameManager::get()->m_playerColor.value()));
+		//gradient->setStartColor(GameManager::get()->colorForIdx(GameManager::get()->->getPlayerColor()));
+		gradient->setEndColor(GameManager::get()->colorForIdx(GameManager::get()->m_playerColor2.value()));
+		//gradient->setEndColor(GameManager::get()->colorForIdx(GameManager::get()->getPlayerColor2()));
 
 		gradient->setOpacity(255);
 		bg->setOpacity(255);
 
-		return a;
+		return true;
+	}
+
+};
+
+class $modify(MessagesProfilePage) {
+
+	bool init(bool p0)
+	{
+		if (!MessagesProfilePage::init(p0))
+			return false;
+
+		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
+			return true;
+
+		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+
+		auto gradient = CCLayerGradient::create();
+		
+		gradient->setStartColor({255, 0, 0});
+		gradient->setEndColor({0, 255, 0});
+		gradient->setZOrder(-1);
+		gradient->setID("gradient"_spr);
+
+		gradient->setPosition(CCDirector::get()->getWinSize() / 2);
+		gradient->setContentSize(ccp(440, 290));
+		gradient->ignoreAnchorPointForPosition(false);
+
+		if (Mod::get()->getSettingValue<bool>("reverse-order"))
+			gradient->setScaleY(-1);
+
+		auto darken = CCScale9Sprite::createWithSpriteFrameName("square-fill.png"_spr);
+		darken->setID("darken"_spr);
+		darken->setContentSize(gradient->getContentSize() - ccp(15, 15));
+		darken->setZOrder(0);
+		darken->setPosition(gradient->getPosition());
+		darken->setAnchorPoint(gradient->getAnchorPoint());
+
+		auto bg = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
+		bg->setPosition(CCDirector::get()->getWinSize() / 2);
+		bg->setContentSize(ccp(440, 290));
+		bg->setZOrder(1);
+		bg->setID("bg"_spr);
+
+		l->addChild(bg);
+		l->addChild(darken);
+		l->addChild(gradient);
+
+		gradient->setStartColor(GameManager::get()->colorForIdx(GameManager::get()->m_playerColor.value()));
+		//gradient->setStartColor(GameManager::get()->colorForIdx(GameManager::get()->->getPlayerColor()));
+		gradient->setEndColor(GameManager::get()->colorForIdx(GameManager::get()->m_playerColor2.value()));
+		//gradient->setEndColor(GameManager::get()->colorForIdx(GameManager::get()->getPlayerColor2()));
+
+		gradient->setOpacity(255);
+		bg->setOpacity(255);
+
+		return true;
+	}
+
+};
+
+class $modify(FriendsProfilePage) {
+
+	bool init(UserListType p0)
+	{
+		if (!FriendsProfilePage::init(p0))
+			return false;
+
+		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
+			return true;
+
+		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+
+		auto gradient = CCLayerGradient::create();
+		
+		gradient->setStartColor({255, 0, 0});
+		gradient->setEndColor({0, 255, 0});
+		gradient->setZOrder(-1);
+		gradient->setID("gradient"_spr);
+
+		gradient->setPosition(CCDirector::get()->getWinSize() / 2);
+		gradient->setContentSize(ccp(440, 290));
+		gradient->ignoreAnchorPointForPosition(false);
+
+		if (Mod::get()->getSettingValue<bool>("reverse-order"))
+			gradient->setScaleY(-1);
+
+		auto darken = CCScale9Sprite::createWithSpriteFrameName("square-fill.png"_spr);
+		darken->setID("darken"_spr);
+		darken->setContentSize(gradient->getContentSize() - ccp(15, 15));
+		darken->setZOrder(0);
+		darken->setPosition(gradient->getPosition());
+		darken->setAnchorPoint(gradient->getAnchorPoint());
+
+		auto bg = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
+		bg->setPosition(CCDirector::get()->getWinSize() / 2);
+		bg->setContentSize(ccp(440, 290));
+		bg->setZOrder(1);
+		bg->setID("bg"_spr);
+
+		l->addChild(bg);
+		l->addChild(darken);
+		l->addChild(gradient);
+
+		gradient->setStartColor(GameManager::get()->colorForIdx(GameManager::get()->m_playerColor.value()));
+		//gradient->setStartColor(GameManager::get()->colorForIdx(GameManager::get()->->getPlayerColor()));
+		gradient->setEndColor(GameManager::get()->colorForIdx(GameManager::get()->m_playerColor2.value()));
+		//gradient->setEndColor(GameManager::get()->colorForIdx(GameManager::get()->getPlayerColor2()));
+
+		gradient->setOpacity(255);
+		bg->setOpacity(255);
+
+		return true;
 	}
 
 };
 
 class $modify(InfoLayer) {
 
-	bool init(GJGameLevel* level, GJUserScore* score)
+	bool init(GJGameLevel* level, GJUserScore* score, GJLevelList* p2)
 	{
-		bool a = InfoLayer::init(level, score);
+		if (!InfoLayer::init(level, score, p2))
+			return false;
 
 		if (!Mod::get()->getSettingValue<bool>("apply-info-layer"))
-			return a;
+			return true;
 
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
 
@@ -152,6 +375,13 @@ class $modify(InfoLayer) {
 		gradient->setContentSize(ccp(440, 290));
 		gradient->ignoreAnchorPointForPosition(false);
 
+		auto darken = CCScale9Sprite::createWithSpriteFrameName("square-fill.png"_spr);
+		darken->setID("darken"_spr);
+		darken->setContentSize(gradient->getContentSize() - ccp(15, 15));
+		darken->setZOrder(0);
+		darken->setPosition(gradient->getPosition());
+		darken->setAnchorPoint(gradient->getAnchorPoint());
+
 		auto bg = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
 		bg->setPosition(CCDirector::get()->getWinSize() / 2);
 		bg->setContentSize(ccp(440, 290));
@@ -159,10 +389,22 @@ class $modify(InfoLayer) {
 		bg->setID("bg"_spr);
 
 		l->addChild(bg);
+		l->addChild(darken);
 		l->addChild(gradient);
 
-		gradient->setStartColor(GameManager::get()->colorForIdx(GameManager::get()->getPlayerColor()));
-		gradient->setEndColor(GameManager::get()->colorForIdx(GameManager::get()->getPlayerColor2()));
+		if (Mod::get()->getSettingValue<bool>("use-custom-colours"))
+		{
+			gradient->setStartColor(Mod::get()->getSettingValue<ccColor3B>("primary-colour"));
+			gradient->setEndColor(Mod::get()->getSettingValue<ccColor3B>("secondary-colour"));
+		}
+		else
+		{
+			gradient->setStartColor(GameManager::get()->colorForIdx(GameManager::get()->m_playerColor.value()));
+			gradient->setEndColor(GameManager::get()->colorForIdx(GameManager::get()->m_playerColor2.value()));
+		}
+
+		if (Mod::get()->getSettingValue<bool>("reverse-order"))
+			gradient->setScaleY(-1);
 
 		gradient->setOpacity(255);
 		bg->setOpacity(255);
@@ -175,15 +417,10 @@ class $modify(InfoLayer) {
 			reinterpret_cast<CCNodeRGBA*>(l->getChildren()->objectAtIndex(3))->setOpacity(100);
 		}		
 
-		return a;
+		return true;
 	}
 
 };
-
-/*class $modify (geode::Popup<std::string>)
-{
-	
-};*/
 
 class $modify (GJCommentListLayer)
 {
@@ -200,8 +437,9 @@ class $modify (GJCommentListLayer)
 		}
 
 		auto spr = CCScale9Sprite::createWithSpriteFrameName("comment-outline.png"_spr);
-		spr->setContentSize(a->getContentSize());
+		spr->setContentSize(a->getContentSize() + ccp(1, 1));
 		spr->setAnchorPoint(ccp(0, 0));
+		spr->setPosition(0, -1);
 		a->addChild(spr, 69);
 
 		return a;
