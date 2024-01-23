@@ -29,7 +29,7 @@ class $modify(ProfilePage) {
 	{
 		bool a = ProfilePage::init(accountID, idk);
 
-		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
+		if (!Mod::get()->getSettingValue<bool>("apply-profiles") || Loader::get()->getLoadedMod("bitz.customprofiles"))
 			return a;
 
 		if (GradientPages::score)
@@ -98,7 +98,7 @@ class $modify(ProfilePage) {
 
 		ProfilePage::loadPageFromUserInfo(score);
 
-		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
+		if (!Mod::get()->getSettingValue<bool>("apply-profiles") || Loader::get()->getLoadedMod("bitz.customprofiles"))
 			return;
 
 		log::info("loadPageFromUserInfo");
@@ -143,7 +143,7 @@ class $modify (GJAccountSettingsLayer)
 		if (!GJAccountSettingsLayer::init(idk))
 			return false;
 
-		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
+		if (!Mod::get()->getSettingValue<bool>("apply-profiles") || Loader::get()->getLoadedMod("bitz.customprofiles"))
 			return true;
 
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
@@ -404,7 +404,7 @@ class $modify(InfoLayer) {
 		if (!InfoLayer::init(level, score, p2))
 			return false;
 
-		if (!Mod::get()->getSettingValue<bool>("apply-info-layer"))
+		if (!Mod::get()->getSettingValue<bool>("apply-info-layer") || Loader::get()->getLoadedMod("bitz.customprofiles"))
 			return true;
 
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
@@ -472,6 +472,9 @@ class $modify (GJCommentListLayer)
 	static GJCommentListLayer* create(BoomListView* p0, char const* p1, cocos2d::_ccColor4B p2, float p3, float p4, bool p5)
 	{
 		auto a = GJCommentListLayer::create(p0, p1, p2, p3, p4, p5);
+
+		if (Loader::get()->getLoadedMod("bitz.customprofiles"))
+			return a;
 
 		if (!(Mod::get()->getSettingValue<bool>("apply-profiles") || Mod::get()->getSettingValue<bool>("apply-info-layer")))
 			return a;
