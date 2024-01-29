@@ -123,14 +123,22 @@ class $modify(ProfilePage) {
 				
 				if (g->getOpacity() == 0)
 				{
+					#ifdef GEODE_IS_MACOS
+					g->setOpacity(255);
+					#else
 					g->runAction(CCFadeIn::create(0.25f));
+					#endif
 				}
 
 				if (d)
 				{
 					if (d->getOpacity() == 0)
 					{
-						d->runAction(CCFadeIn::create(0.25f));					
+						#ifdef GEODE_IS_MACOS
+						d->setOpacity(255);
+						#else
+						d->runAction(CCFadeIn::create(0.25f));
+						#endif
 					}
 				}
 			}
@@ -470,7 +478,6 @@ class $modify(InfoLayer) {
 
 };
 
-/*
 #ifndef GEODE_IS_MACOS
 
 class $modify (GJCommentListLayer)
@@ -963,4 +970,4 @@ class $modify (SetIDPopup)
 	}
 };
 
-#endif*/
+#endif
