@@ -467,7 +467,7 @@ class $modify(InfoLayer) {
 
 };
 
-#ifndef GEODE_IS_MAC
+#ifndef GEODE_IS_MACOS
 
 class $modify (GJCommentListLayer)
 {
