@@ -467,6 +467,7 @@ class $modify(InfoLayer) {
 
 };
 
+/*
 #ifndef GEODE_IS_MACOS
 
 class $modify (GJCommentListLayer)
@@ -959,4 +960,4 @@ class $modify (SetIDPopup)
 	}
 };
 
-#endif
+#endif*/
