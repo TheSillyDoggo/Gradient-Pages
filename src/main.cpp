@@ -467,6 +467,8 @@ class $modify(InfoLayer) {
 
 };
 
+#ifndef GEODE_IS_MAC
+
 class $modify (GJCommentListLayer)
 {
 	static GJCommentListLayer* create(BoomListView* p0, char const* p1, cocos2d::_ccColor4B p2, float p3, float p4, bool p5)
@@ -957,4 +959,4 @@ class $modify (SetIDPopup)
 	}
 };
 
-
+#endif
