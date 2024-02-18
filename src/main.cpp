@@ -92,7 +92,7 @@ class GradientPages
 			macNode->setPosition(CCDirector::get()->getWinSize() / 2);
 			macNode->setID("gradient"_spr);
 
-			int numSteps = Mod::get()->getSettingValue<int>("gradient-quality");
+			int numSteps = Mod::get()->getSettingValue<int64_t>("gradient-quality");
 
 			ccColor3B startColor = ccc3(255, 0, 0);
 			ccColor3B endColor = ccc3(0, 0, 255);
