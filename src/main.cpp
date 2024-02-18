@@ -17,12 +17,19 @@
 
 using namespace geode::prelude;
 
-#include "MyLayerGradient.h"
+//#include "CCLayerGradient.h"
 
 class GradientPages
 {
 	public:
 		static inline GJUserScore* score = nullptr;
+
+		static CCNode* createGradientWithSize(CCPoint size)
+		{
+			
+
+			return nullptr;
+		}
 };
 
 class $modify(ProfilePage) {
@@ -44,8 +51,8 @@ class $modify(ProfilePage) {
 
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
 
-		//auto gradient = MyLayerGradient::create();
-		auto gradient = MyLayerGradient::create();
+		//auto gradient = CCLayerGradient::create();
+		auto gradient = CCLayerGradient::create();
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
@@ -98,8 +105,10 @@ class $modify(ProfilePage) {
 	virtual void loadPageFromUserInfo(GJUserScore* score)
 	{
 		GradientPages::score = score;
+		//score->m_commentHistoryStatus = 0;
 
 		ProfilePage::loadPageFromUserInfo(score);
+		//score->m_commentHistoryStatus = 0;
 
 		if (!Mod::get()->getSettingValue<bool>("apply-profiles") || Loader::get()->getLoadedMod("bitz.customprofiles"))
 			return;
@@ -113,7 +122,7 @@ class $modify(ProfilePage) {
 
 		if (l)
 		{
-			auto g = reinterpret_cast<MyLayerGradient*>(l->getChildByID("gradient"_spr));
+			auto g = reinterpret_cast<CCLayerGradient*>(l->getChildByID("gradient"_spr));
 			auto d = reinterpret_cast<CCScale9Sprite*>(l->getChildByID("darken"_spr));
 
 			if (g)
@@ -161,7 +170,7 @@ class $modify (GJAccountSettingsLayer)
 		l->sortAllChildren();
 		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
 
-		auto gradient = MyLayerGradient::create();
+		auto gradient = CCLayerGradient::create();
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
@@ -225,7 +234,7 @@ class $modify(FRequestProfilePage) {
 
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
 
-		auto gradient = MyLayerGradient::create();
+		auto gradient = CCLayerGradient::create();
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
@@ -290,7 +299,7 @@ class $modify(MessagesProfilePage) {
 
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
 
-		auto gradient = MyLayerGradient::create();
+		auto gradient = CCLayerGradient::create();
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
@@ -355,7 +364,7 @@ class $modify(FriendsProfilePage) {
 
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
 
-		auto gradient = MyLayerGradient::create();
+		auto gradient = CCLayerGradient::create();
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
@@ -420,7 +429,7 @@ class $modify(InfoLayer) {
 
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
 
-		auto gradient = MyLayerGradient::create();
+		auto gradient = CCLayerGradient::create();
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
@@ -521,7 +530,7 @@ class $modify (ItemInfoPopup)
 		l->sortAllChildren();
 		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
 
-		auto gradient = MyLayerGradient::create();
+		auto gradient = CCLayerGradient::create();
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
@@ -587,7 +596,7 @@ class $modify (ShardsPage)
 		l->sortAllChildren();
 		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
 
-		auto gradient = MyLayerGradient::create();
+		auto gradient = CCLayerGradient::create();
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
@@ -653,7 +662,7 @@ class $modify (CommunityCreditsPage)
 		l->sortAllChildren();
 		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
 
-		auto gradient = MyLayerGradient::create();
+		auto gradient = CCLayerGradient::create();
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
@@ -719,7 +728,7 @@ class $modify (DemonFilterSelectLayer)
 		l->sortAllChildren();
 		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
 
-		auto gradient = MyLayerGradient::create();
+		auto gradient = CCLayerGradient::create();
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
@@ -785,7 +794,7 @@ class $modify (MoreSearchLayer)
 		l->sortAllChildren();
 		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
 
-		auto gradient = MyLayerGradient::create();
+		auto gradient = CCLayerGradient::create();
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
@@ -851,7 +860,7 @@ class $modify (ChallengesPage)
 		l->sortAllChildren();
 		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
 
-		auto gradient = MyLayerGradient::create();
+		auto gradient = CCLayerGradient::create();
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});
@@ -918,7 +927,7 @@ class $modify (SetIDPopup)
 		auto v = reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0));
 		v->setVisible(false);
 
-		auto gradient = MyLayerGradient::create();
+		auto gradient = CCLayerGradient::create();
 		
 		gradient->setStartColor({255, 0, 0});
 		gradient->setEndColor({0, 255, 0});

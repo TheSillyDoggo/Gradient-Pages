@@ -1,4 +1,4 @@
-#include <Geode/Geode.hpp>
+/*#include <Geode/Geode.hpp>
 
 using namespace geode::prelude;
 
@@ -24,4 +24,4 @@ private:
     GLubyte _startOpacity;
     GLubyte _endOpacity;
     cocos2d::CCPoint _vector;
-};
+};*/
