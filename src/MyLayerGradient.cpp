@@ -1,4 +1,4 @@
-/*#include "MyLayerGradient.h"
+#include "MyLayerGradient.h"
 
 bool MyLayerGradient::init()
 {
@@ -79,4 +79,3 @@ void MyLayerGradient::draw()
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 }
-*/
