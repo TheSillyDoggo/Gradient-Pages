@@ -24,6 +24,7 @@ class GradientPages
 {
 	public:
 		static inline GJUserScore* score = nullptr;
+		static inline CCNode* macNode = nullptr;
 
 		static CCNode* createGradientWithSize(CCPoint size)
 		{
@@ -144,7 +145,7 @@ class GradientPages
 			return macNode;
 		}
 };
-/*
+
 class $modify(ProfilePage) {
 
 	bool init(int accountID, bool idk)
@@ -161,6 +162,85 @@ class $modify(ProfilePage) {
 				GradientPages::score = nullptr;
 			}
 		}
+
+		#ifdef GEODE_IS_MACOS
+
+		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		auto size = ccp(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize().width, reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize().height);
+		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setZOrder(-2);
+
+		auto macNode = CCNode::create();
+		macNode->setContentSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize());
+		macNode->setZOrder(-1);
+		macNode->setAnchorPoint(ccp(0.5f, 0.5f));
+		macNode->setPosition(CCDirector::get()->getWinSize() / 2);
+		macNode->setID("gradient"_spr);
+
+		int numSteps = Mod::get()->getSettingValue<int64_t>("gradient-quality");
+
+		ccColor3B startColor = ccc3(255, 0, 0);
+		ccColor3B endColor = ccc3(0, 0, 255);
+
+		if (GradientPages::score == nullptr)
+		{
+			log::info("hasn't loaded profile info yet :(");
+		}
+		else
+		{
+			startColor = GameManager::get()->colorForIdx(GradientPages::score->m_color1);
+			endColor = GameManager::get()->colorForIdx(GradientPages::score->m_color2);
+		}
+
+		for (int i = 0; i < numSteps; i++) 
+		{
+			ccColor3B color = GradientPages::lerpColor(startColor, endColor, (i * 1.0f / numSteps * 1.0f));
+
+			CCSprite *sprite = CCSprite::create("pixel.png");
+			sprite->setColor(color);
+
+			sprite->setPosition(ccp(size.x / 2, size.y - ((((size.y / sprite->getContentSize().width) / numSteps)) * (i + 1)) / 2));
+			sprite->setAnchorPoint(ccp(0.5f, 0));
+			sprite->setScaleX(size.x / sprite->getContentSize().width);
+			sprite->setScaleY((size.y / sprite->getContentSize().width) / numSteps);
+
+			sprite->setTag(i + 1);
+
+			macNode->addChild(sprite);
+		}
+
+		if (Mod::get()->getSettingValue<bool>("reverse-order"))
+			macNode->setScaleY(-1);
+
+		auto darken = CCScale9Sprite::createWithSpriteFrameName("square-fill.png"_spr);
+		darken->setID("darken"_spr);
+		darken->setContentSize(size - ccp(15, 15));
+		darken->setZOrder(0);
+		darken->setPosition(size / 2);
+
+		auto outline = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
+		outline->setPosition(size / 2);
+		outline->setContentSize(size);
+		outline->setZOrder(1);
+		outline->setID("outline"_spr);
+		
+		macNode->addChild(darken);
+		macNode->addChild(outline);
+
+		if (GradientPages::score == nullptr)
+		{
+			CCArrayExt<GameObject*> objects = macNode->getChildren();
+
+			for (auto* obj : objects) {
+				obj->setOpacity(0);
+			}
+		}
+
+		l->addChild(macNode);
+		GradientPages::macNode = macNode;
+
+		return true;
+
+		#else
 
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
 
@@ -213,6 +293,8 @@ class $modify(ProfilePage) {
 		}
 
 		return a;
+
+		#endif
 	}
 
 	virtual void loadPageFromUserInfo(GJUserScore* score)
@@ -221,6 +303,29 @@ class $modify(ProfilePage) {
 		//score->m_commentHistoryStatus = 0;
 
 		ProfilePage::loadPageFromUserInfo(score);
+
+		#ifdef GEODE_IS_MACOS
+
+		CCArrayExt<GameObject*> objects = GradientPages::macNode->getChildren();
+
+		ccColor3B startColor = GameManager::get()->colorForIdx(GradientPages::score->m_color1);
+		ccColor3B endColor = GameManager::get()->colorForIdx(GradientPages::score->m_color2);
+
+		int numSteps = Mod::get()->getSettingValue<int64_t>("gradient-quality");
+
+		for (auto* obj : objects) {
+			if (!obj->getID().starts_with(""_spr))
+			{
+				ccColor3B color = GradientPages::lerpColor(startColor, endColor, ((obj->getTag() - 1) * 1.0f / numSteps * 1.0f));
+
+				obj->setColor(color);
+			}
+
+			if (obj->getOpacity() == 0)
+				obj->runAction(CCFadeTo::create(0.25f, 255));
+		}
+
+		#else
 		//score->m_commentHistoryStatus = 0;
 
 		if (!Mod::get()->getSettingValue<bool>("apply-profiles") || Loader::get()->getLoadedMod("bitz.customprofiles"))
@@ -245,29 +350,23 @@ class $modify(ProfilePage) {
 				
 				if (g->getOpacity() == 0)
 				{
-					#ifdef GEODE_IS_MACOS
-					g->setOpacity(255);
-					#else
-					g->runAction(CCFadeIn::create(0.25f));
-					#endif
+					g->runAction(CCFadeTo::create(0.25f, 255));
 				}
 
 				if (d)
 				{
 					if (d->getOpacity() == 0)
 					{
-						#ifdef GEODE_IS_MACOS
-						d->setOpacity(255);
-						#else
-						d->runAction(CCFadeIn::create(0.25f));
-						#endif
+						d->runAction(CCFadeTo::create(0.25f, 255));
 					}
 				}
 			}
 		}
+
+		#endif
 	}
 
-};*/
+};
 
 class $modify (GJAccountSettingsLayer)
 {
