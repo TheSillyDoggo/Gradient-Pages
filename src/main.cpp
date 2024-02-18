@@ -228,7 +228,7 @@ class $modify(ProfilePage) {
 
 		if (GradientPages::score == nullptr)
 		{
-			CCArrayExt<GameObject*> objects = macNode->getChildren();
+			CCArrayExt<CCNodeRGBA*> objects = macNode->getChildren();
 
 			for (auto* obj : objects) {
 				obj->setOpacity(0);
@@ -306,7 +306,7 @@ class $modify(ProfilePage) {
 
 		#ifdef GEODE_IS_MACOS
 
-		CCArrayExt<GameObject*> objects = GradientPages::macNode->getChildren();
+		CCArrayExt<CCNodeRGBA*> objects = GradientPages::macNode->getChildren();
 
 		ccColor3B startColor = GameManager::get()->colorForIdx(GradientPages::score->m_color1);
 		ccColor3B endColor = GameManager::get()->colorForIdx(GradientPages::score->m_color2);
