@@ -1,4 +1,4 @@
-#include <Geode/Geode.hpp>
+/*#include <Geode/Geode.hpp>
 
 using namespace geode::prelude;
 
@@ -10,4 +10,4 @@ public:
 
     void setStartColor(const cocos2d::ccColor3B& startColor);
     void setEndColor(const cocos2d::ccColor3B& endColor);
-};
+};*/
