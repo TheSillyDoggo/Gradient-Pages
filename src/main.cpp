@@ -150,6 +150,8 @@ class $modify(ProfilePage) {
 
 	bool init(int accountID, bool idk)
 	{
+		GradientPages::macNode = nullptr;
+
 		bool a = ProfilePage::init(accountID, idk);
 
 		if (!Mod::get()->getSettingValue<bool>("apply-profiles") || Loader::get()->getLoadedMod("bitz.customprofiles"))
@@ -163,7 +165,7 @@ class $modify(ProfilePage) {
 			}
 		}
 
-		#ifdef GEODE_IS_MACOS
+		#ifndef GEODE_IS_MACOS
 
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
 		auto size = ccp(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize().width, reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize().height);
@@ -299,42 +301,45 @@ class $modify(ProfilePage) {
 
 	virtual void loadPageFromUserInfo(GJUserScore* score)
 	{
-		GradientPages::score = score;
-		//score->m_commentHistoryStatus = 0;
-
-		ProfilePage::loadPageFromUserInfo(score);
-
-		#ifdef GEODE_IS_MACOS
-
-		CCArrayExt<CCNodeRGBA*> objects = GradientPages::macNode->getChildren();
-
-		ccColor3B startColor = GameManager::get()->colorForIdx(GradientPages::score->m_color1);
-		ccColor3B endColor = GameManager::get()->colorForIdx(GradientPages::score->m_color2);
-
-		int numSteps = Mod::get()->getSettingValue<int64_t>("gradient-quality");
-
-		for (auto* obj : objects) {
-			if (!obj->getID().starts_with(""_spr))
-			{
-				ccColor3B color = GradientPages::lerpColor(startColor, endColor, ((obj->getTag() - 1) * 1.0f / numSteps * 1.0f));
-
-				obj->setColor(color);
-			}
-
-			if (obj->getOpacity() == 0)
-				obj->runAction(CCFadeTo::create(0.25f, 255));
-		}
-
-		#else
-		//score->m_commentHistoryStatus = 0;
-
 		if (!Mod::get()->getSettingValue<bool>("apply-profiles") || Loader::get()->getLoadedMod("bitz.customprofiles"))
 			return;
+			
+		GradientPages::score = score;
 
 		log::info("loadPageFromUserInfo");
 
 		log::info("colour 1: {}", score->m_color1);
 		log::info("colour 2: {}", score->m_color2);
+		//score->m_commentHistoryStatus = 0;
+
+		ProfilePage::loadPageFromUserInfo(score);
+
+		#ifndef GEODE_IS_MACOS
+
+		if (GradientPages::macNode)
+		{
+			CCArrayExt<CCSprite*> objects = GradientPages::macNode->getChildren();
+
+			ccColor3B startColor = GameManager::get()->colorForIdx(GradientPages::score->m_color1);
+			ccColor3B endColor = GameManager::get()->colorForIdx(GradientPages::score->m_color2);
+
+			int numSteps = Mod::get()->getSettingValue<int64_t>("gradient-quality");
+
+			for (auto* obj : objects) {
+				if (!obj->getID().starts_with(""_spr))
+				{
+					ccColor3B color = GradientPages::lerpColor(startColor, endColor, ((obj->getTag() - 1) * 1.0f / numSteps * 1.0f));
+
+					obj->setColor(color);
+				}
+
+				if (obj->getOpacity() == 0)
+					obj->runAction(CCFadeTo::create(0.25f, 255));
+			}
+		}
+
+		#else
+		//score->m_commentHistoryStatus = 0;
 		
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
 
@@ -472,8 +477,6 @@ class $modify(InfoLayer) {
 	}
 
 };
-
-#ifndef GEODE_IS_MACOS
 
 class $modify (GJCommentListLayer)
 {
@@ -643,5 +646,3 @@ class $modify (SetIDPopup)
 		return true;
 	}
 };
-
-#endif
