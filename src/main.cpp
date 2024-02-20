@@ -301,6 +301,8 @@ class $modify(ProfilePage) {
 
 	virtual void loadPageFromUserInfo(GJUserScore* score)
 	{
+		ProfilePage::loadPageFromUserInfo(score);
+
 		if (!Mod::get()->getSettingValue<bool>("apply-profiles") || Loader::get()->getLoadedMod("bitz.customprofiles"))
 			return;
 			
@@ -311,8 +313,6 @@ class $modify(ProfilePage) {
 		log::info("colour 1: {}", score->m_color1);
 		log::info("colour 2: {}", score->m_color2);
 		//score->m_commentHistoryStatus = 0;
-
-		ProfilePage::loadPageFromUserInfo(score);
 
 		#ifdef GEODE_IS_MACOS
 
