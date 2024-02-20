@@ -165,7 +165,7 @@ class $modify(ProfilePage) {
 			}
 		}
 
-		#ifndef GEODE_IS_MACOS
+		#ifdef GEODE_IS_MACOS
 
 		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
 		auto size = ccp(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize().width, reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize().height);
@@ -314,7 +314,7 @@ class $modify(ProfilePage) {
 
 		ProfilePage::loadPageFromUserInfo(score);
 
-		#ifndef GEODE_IS_MACOS
+		#ifdef GEODE_IS_MACOS
 
 		if (GradientPages::macNode)
 		{

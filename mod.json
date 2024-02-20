@@ -26,7 +26,7 @@
             "default": 128,
             "min": 1,
             "max": 512,
-            "platforms": [ "macos", "windows" ]
+            "platforms": [ "macos" ]
         },
         "apply-profiles": {
             "name": "Apply to Profiles",
