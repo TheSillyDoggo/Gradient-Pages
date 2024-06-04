@@ -1,11 +1,11 @@
 {
-	"geode": "2.0.0",
+	"geode": "2.0.0-beta.27",
 	"gd": {
-		"win": "2.204",
-        "mac": "2.200",
+		"win": "2.206",
+        "mac": "2.206",
 		"android": "*"
 	},
-	"version": "v2.2.4",
+	"version": "v2.3.0",
 	"id": "TheSillyDoggo.GradientPages",
 	"name": "Gradient Pages",
 	"developer": "TheSillyDoggo",
@@ -19,14 +19,11 @@
 		}
 	},
 	"settings": {
-        "gradient-quality": {
-            "name": "Particle Quality",
-            "description": "The amount of segments in the gradient, dont set this value too high or the game may run out of memory",
-            "type": "int",
-            "default": 128,
-            "min": 1,
-            "max": 512,
-            "platforms": [ "macos" ]
+        "gradient-comments": {
+            "name": "Gradient in comments",
+            "description": "Applys a gradient to the background of comments",
+            "type": "bool",
+            "default": true
         },
         "apply-profiles": {
             "name": "Apply to Profiles",

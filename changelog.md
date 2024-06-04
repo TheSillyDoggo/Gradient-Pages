@@ -1,3 +1,9 @@
+# 2.3.0
+
+- Added 2.206 support
+- Gradients show behind comments on profile
+- Viewing a users comments uses the colours of the user you are viewing
+
 # 2.2.0
 
 - Fixed outlines on music / sfx library

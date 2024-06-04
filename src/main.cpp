@@ -16,8 +16,6 @@
 #include <Geode/modify/SetTextPopup.hpp>
 #include <Geode/modify/ChallengesPage.hpp>
 
-#include "MyLayerGradient.h"
-
 using namespace geode::prelude;
 
 class GradientPages
@@ -26,14 +24,8 @@ class GradientPages
 		static inline GJUserScore* score = nullptr;
 		static inline CCNode* macNode = nullptr;
 
-		static CCNode* createGradientWithSize(CCPoint size)
+		static CCNode* createGradientWithSize(CCPoint size, GJUserScore* score = nullptr)
 		{
-#ifdef GEODE_IS_MACOS
-
-			return createMacNode(size);
-
-#else
-
 			auto gradient = CCLayerGradient::create();
 			gradient->setContentSize(size);
 			gradient->setZOrder(-69);
@@ -52,6 +44,12 @@ class GradientPages
 
 			gradient->setPosition(CCDirector::get()->getWinSize() / 2);
 			gradient->ignoreAnchorPointForPosition(false);
+
+			if (score)
+			{
+				gradient->setStartColor(GameManager::sharedState()->colorForIdx(score->m_color1));
+				gradient->setEndColor(GameManager::sharedState()->colorForIdx(score->m_color2));
+			}
 
 			if (Mod::get()->getSettingValue<bool>("reverse-order"))
 			gradient->setScaleY(-1);
@@ -72,8 +70,6 @@ class GradientPages
 			gradient->addChild(outline);
 
 			return gradient;
-
-#endif
 		}
 
 		static ccColor3B lerpColor(const ccColor3B& startColor, const ccColor3B& endColor, float t) {
@@ -83,220 +79,173 @@ class GradientPages
 						startColor.g + (endColor.g - startColor.g) * t,
 						startColor.b + (endColor.b - startColor.b) * t);
 		}
+};
 
-		static CCNode* createMacNode(CCPoint size)
+class $modify(ProfilePageExt, ProfilePage) {
+
+	void updateCommentList()
+	{
+		if (!m_list)
+			return;
+
+		if (auto comment = m_list)
 		{
-			auto macNode = CCNode::create();
-			macNode->setContentSize(size);
-			macNode->setZOrder(-69);
-			macNode->setAnchorPoint(ccp(0.5f, 0.5f));
-			macNode->setPosition(CCDirector::get()->getWinSize() / 2);
-			macNode->setID("gradient"_spr);
-
-			int numSteps = Mod::get()->getSettingValue<int64_t>("gradient-quality");
-
-			ccColor3B startColor = ccc3(255, 0, 0);
-			ccColor3B endColor = ccc3(0, 0, 255);
-
-			if (Mod::get()->getSettingValue<bool>("use-custom-colours"))
+			if (Mod::get()->getSettingValue<bool>("gradient-comments"))
 			{
-				startColor = Mod::get()->getSettingValue<ccColor3B>("primary-colour");
-				endColor = Mod::get()->getSettingValue<ccColor3B>("secondary-colour");
-			}
-			else
-			{
-				startColor = GameManager::get()->colorForIdx(GameManager::get()->m_playerColor.value());
-				endColor = GameManager::get()->colorForIdx(GameManager::get()->m_playerColor2.value());
+				comment->setColor(ccc3(0, 0, 0));
+				comment->setOpacity(40);
 			}
 
-			for (int i = 0; i < numSteps; i++) 
+			CCObject* child = nullptr;
+			CCARRAY_FOREACH(comment->getChildren(), child)
 			{
-				ccColor3B color = lerpColor(startColor, endColor, (i * 1.0f / numSteps * 1.0f));
+				if (typeinfo_cast<CCSprite*>(child))
+				{
+					as<CCSprite*>(child)->setVisible(false);
+				}
+			};
 
-				CCSprite *sprite = CCSprite::create("pixel.png");
-				sprite->setColor(color);
+			if (auto ss = comment->getChildByID("comment-outline"_spr))
+				ss->removeFromParent();
 
-				sprite->setPosition(ccp(size.x / 2, size.y - ((((size.y / sprite->getContentSize().width) / numSteps)) * (i + 1)) / 2));
-				sprite->setAnchorPoint(ccp(0.5f, 0));
-				sprite->setScaleX(size.x / sprite->getContentSize().width);
-				sprite->setScaleY((size.y / sprite->getContentSize().width) / numSteps);
+			auto spr = CCScale9Sprite::createWithSpriteFrameName("comment-outline.png"_spr);
+			spr->setColor(ccc3(0, 0, 0));
+			spr->setOpacity(50);
+			spr->setContentSize(comment->getContentSize() + ccp(3.5f, 3.5f)); // i love random numbers that make no sense
+			spr->setAnchorPoint(ccp(0.5f, 0.5f));
+			spr->setPosition(comment->getContentSize() / 2);
+			spr->setID("comment-outline"_spr);
+			comment->addChild(spr, 69);
+		}
 
-				macNode->addChild(sprite);
+		if (!Mod::get()->getSettingValue<bool>("gradient-comments"))
+			return;
+
+		if (!m_list->m_list)
+			return;
+
+		if (!m_list->m_list->m_tableView)
+			return;
+
+		if (!m_list->m_list->m_tableView->m_contentLayer)
+			return;
+
+		if (auto content = m_list->m_list->m_tableView->m_contentLayer) // not sorry for this
+		{
+			if (!content->getChildren())
+				return;
+			
+			CCObject* child = nullptr;
+
+			CCARRAY_FOREACH(content->getChildren(), child)
+			{
+				if (auto cmt = typeinfo_cast<CommentCell*>(child))
+				{
+					cmt->m_backgroundLayer->setColor(ccc3(0, 0, 0));
+					cmt->m_backgroundLayer->setOpacity(0);
+					if (auto bg = getChildOfType<CCScale9Sprite>(cmt->m_mainLayer, 0))
+					{
+						bg->setOpacity(50);
+						bg->setColor(ccc3(0, 0, 0));
+					}
+				}
+			};
+		}
+	}
+
+	static ProfilePage* create(int accountID, bool ownProfile)
+	{
+		auto res = ProfilePage::create(accountID, ownProfile);
+
+		if (res)
+		{
+			GradientPages::macNode = nullptr;
+
+			if (!Mod::get()->getSettingValue<bool>("apply-profiles") || Loader::get()->getLoadedMod("bitz.customprofiles"))
+				return res;
+
+			if (GradientPages::score && GradientPages::score->m_accountID != accountID)
+				GradientPages::score = nullptr;
+
+			if (auto icons = getChildOfType<GJCommentListLayer>(res->m_mainLayer, 0))
+			{
+				if (Mod::get()->getSettingValue<bool>("gradient-comments"))
+				{
+					icons->setColor(ccc3(0, 0, 0));
+					icons->setOpacity(40);
+				}
+
+				CCObject* child = nullptr;
+				CCARRAY_FOREACH(icons->getChildren(), child)
+				{
+					if (typeinfo_cast<CCSprite*>(child))
+					{
+						as<CCSprite*>(child)->setVisible(false);
+					}
+				};
+
+				auto spr = CCScale9Sprite::createWithSpriteFrameName("comment-outline.png"_spr);
+				spr->setColor(ccc3(0, 0, 0));
+				spr->setOpacity(50);
+				spr->setContentSize(icons->getContentSize() + ccp(3.5f, 3.5f));
+				spr->setAnchorPoint(ccp(0.5f, 0.5f));
+				spr->setPosition(icons->getContentSize() / 2);
+				icons->addChild(spr, 69);
 			}
+
+			as<ProfilePageExt*>(res)->updateCommentList();
+
+			auto l = res->m_mainLayer;
+
+			auto gradient = CCLayerGradient::create();
+			
+			gradient->setStartColor({255, 0, 0});
+			gradient->setEndColor({0, 255, 0});
+			gradient->setZOrder(-1);
+			gradient->setID("gradient"_spr);
+			gradient->setOpacity(0);
+
+			gradient->setPosition(CCDirector::get()->getWinSize() / 2);
+			gradient->setContentSize(ccp(440, 290));
+			gradient->ignoreAnchorPointForPosition(false);
 
 			if (Mod::get()->getSettingValue<bool>("reverse-order"))
-				macNode->setScaleY(-1);
+				gradient->setScaleY(-1);
 
 			auto darken = CCScale9Sprite::createWithSpriteFrameName("square-fill.png"_spr);
 			darken->setID("darken"_spr);
-			darken->setContentSize(size - ccp(15, 15));
+			darken->setContentSize(gradient->getContentSize() - ccp(15, 15));
 			darken->setZOrder(0);
-			darken->setPosition(size / 2);
+			darken->setPosition(gradient->getContentSize() / 2);
+			darken->setAnchorPoint(gradient->getAnchorPoint());
+			darken->setOpacity(0);
 
-			auto outline = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
-			outline->setPosition(size / 2);
-			outline->setContentSize(size);
-			outline->setZOrder(1);
-			outline->setID("outline"_spr);
+			auto bg = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
+			bg->setPosition(gradient->getContentSize() / 2);
+			bg->setContentSize(ccp(440, 290));
+			bg->setZOrder(1);
+			bg->setID("bg"_spr);
+
+			gradient->addChild(bg, 42069);
+			gradient->addChild(darken);
+			l->addChild(gradient);
 			
-			macNode->addChild(darken);
-			macNode->addChild(outline);
-
-			return macNode;
-		}
-};
-
-class $modify(ProfilePage) {
-
-	bool init(int accountID, bool idk)
-	{
-		GradientPages::macNode = nullptr;
-
-		bool a = ProfilePage::init(accountID, idk);
-
-		if (!Mod::get()->getSettingValue<bool>("apply-profiles") || Loader::get()->getLoadedMod("bitz.customprofiles"))
-			return a;
-
-		if (GradientPages::score)
-		{
-			if (GradientPages::score->m_accountID != accountID)
+			if (GradientPages::score == nullptr)
 			{
-				GradientPages::score = nullptr;
+				log::info("hasn't loaded profile info yet :(");
+			}
+			else
+			{
+				gradient->setStartColor(GameManager::get()->colorForIdx(GradientPages::score->m_color1));
+				gradient->setEndColor(GameManager::get()->colorForIdx(GradientPages::score->m_color2));
+
+				gradient->setOpacity(255);
+				darken->setOpacity(255);
+				bg->setOpacity(255);
 			}
 		}
 
-		#ifdef GEODE_IS_MACOS
-
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
-		auto size = ccp(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize().width, reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize().height);
-		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setZOrder(-2);
-
-		auto macNode = CCNode::create();
-		macNode->setContentSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize());
-		macNode->setZOrder(-1);
-		macNode->setAnchorPoint(ccp(0.5f, 0.5f));
-		macNode->setPosition(CCDirector::get()->getWinSize() / 2);
-		macNode->setID("gradient"_spr);
-
-		int numSteps = Mod::get()->getSettingValue<int64_t>("gradient-quality");
-
-		ccColor3B startColor = ccc3(255, 0, 0);
-		ccColor3B endColor = ccc3(0, 0, 255);
-
-		if (GradientPages::score == nullptr)
-		{
-			log::info("hasn't loaded profile info yet :(");
-		}
-		else
-		{
-			startColor = GameManager::get()->colorForIdx(GradientPages::score->m_color1);
-			endColor = GameManager::get()->colorForIdx(GradientPages::score->m_color2);
-		}
-
-		for (int i = 0; i < numSteps; i++) 
-		{
-			ccColor3B color = GradientPages::lerpColor(startColor, endColor, (i * 1.0f / numSteps * 1.0f));
-
-			CCSprite *sprite = CCSprite::create("pixel.png");
-			sprite->setColor(color);
-
-			sprite->setPosition(ccp(size.x / 2, size.y - ((((size.y / sprite->getContentSize().width) / numSteps)) * (i + 1)) / 2));
-			sprite->setAnchorPoint(ccp(0.5f, 0));
-			sprite->setScaleX(size.x / sprite->getContentSize().width);
-			sprite->setScaleY((size.y / sprite->getContentSize().width) / numSteps);
-
-			sprite->setTag(i + 1);
-
-			macNode->addChild(sprite);
-		}
-
-		if (Mod::get()->getSettingValue<bool>("reverse-order"))
-			macNode->setScaleY(-1);
-
-		auto darken = CCScale9Sprite::createWithSpriteFrameName("square-fill.png"_spr);
-		darken->setID("darken"_spr);
-		darken->setContentSize(size - ccp(15, 15));
-		darken->setZOrder(0);
-		darken->setPosition(size / 2);
-
-		auto outline = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
-		outline->setPosition(size / 2);
-		outline->setContentSize(size);
-		outline->setZOrder(1);
-		outline->setID("outline"_spr);
-		
-		macNode->addChild(darken);
-		macNode->addChild(outline);
-
-		if (GradientPages::score == nullptr)
-		{
-			CCArrayExt<CCNodeRGBA*> objects = macNode->getChildren();
-
-			for (auto* obj : objects) {
-				obj->setOpacity(0);
-			}
-		}
-
-		l->addChild(macNode);
-		GradientPages::macNode = macNode;
-
-		return true;
-
-		#else
-
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
-
-		//auto gradient = CCLayerGradient::create();
-		auto gradient = CCLayerGradient::create();
-		
-		gradient->setStartColor({255, 0, 0});
-		gradient->setEndColor({0, 255, 0});
-		gradient->setZOrder(-1);
-		gradient->setID("gradient"_spr);
-		gradient->setOpacity(0);
-
-		gradient->setPosition(CCDirector::get()->getWinSize() / 2);
-		gradient->setContentSize(ccp(440, 290));
-		gradient->ignoreAnchorPointForPosition(false);
-
-		if (Mod::get()->getSettingValue<bool>("reverse-order"))
-			gradient->setScaleY(-1);
-
-		auto darken = CCScale9Sprite::createWithSpriteFrameName("square-fill.png"_spr);
-		darken->setID("darken"_spr);
-		darken->setContentSize(gradient->getContentSize() - ccp(15, 15));
-		darken->setZOrder(0);
-		darken->setPosition(gradient->getPosition());
-		darken->setAnchorPoint(gradient->getAnchorPoint());
-		darken->setOpacity(0);
-
-		auto bg = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
-		bg->setPosition(CCDirector::get()->getWinSize() / 2);
-		bg->setContentSize(ccp(440, 290));
-		bg->setZOrder(1);
-		bg->setID("bg"_spr);
-
-		l->addChild(bg);
-		l->addChild(darken);
-		l->addChild(gradient);
-		
-		if (GradientPages::score == nullptr)
-		{
-			log::info("hasn't loaded profile info yet :(");
-		}
-		else
-		{
-			gradient->setStartColor(GameManager::get()->colorForIdx(GradientPages::score->m_color1));
-			gradient->setEndColor(GameManager::get()->colorForIdx(GradientPages::score->m_color2));
-
-			gradient->setOpacity(255);
-			darken->setOpacity(255);
-			bg->setOpacity(255);
-		}
-
-		return a;
-
-		#endif
+		return res;
 	}
 
 	virtual void loadPageFromUserInfo(GJUserScore* score)
@@ -308,48 +257,16 @@ class $modify(ProfilePage) {
 			
 		GradientPages::score = score;
 
-		log::info("loadPageFromUserInfo");
-
-		log::info("colour 1: {}", score->m_color1);
-		log::info("colour 2: {}", score->m_color2);
-		//score->m_commentHistoryStatus = 0;
-
-		#ifdef GEODE_IS_MACOS
-
-		if (GradientPages::macNode)
-		{
-			CCArrayExt<CCSprite*> objects = GradientPages::macNode->getChildren();
-
-			ccColor3B startColor = GameManager::get()->colorForIdx(GradientPages::score->m_color1);
-			ccColor3B endColor = GameManager::get()->colorForIdx(GradientPages::score->m_color2);
-
-			int numSteps = Mod::get()->getSettingValue<int64_t>("gradient-quality");
-
-			for (auto* obj : objects) {
-				if (!obj->getID().starts_with(""_spr))
-				{
-					ccColor3B color = GradientPages::lerpColor(startColor, endColor, ((obj->getTag() - 1) * 1.0f / numSteps * 1.0f));
-
-					obj->setColor(color);
-				}
-
-				if (obj->getOpacity() == 0)
-					obj->runAction(CCFadeTo::create(0.25f, 255));
-			}
-		}
-
-		#else
-		//score->m_commentHistoryStatus = 0;
-		
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		auto l = m_mainLayer;
 
 		if (l)
 		{
-			auto g = reinterpret_cast<CCLayerGradient*>(l->getChildByID("gradient"_spr));
-			auto d = reinterpret_cast<CCScale9Sprite*>(l->getChildByID("darken"_spr));
+			auto g = as<CCLayerGradient*>(l->getChildByID("gradient"_spr));
 
 			if (g)
 			{
+				auto d = as<CCScale9Sprite*>(g->getChildByID("darken"_spr));
+
 				g->setStartColor(GameManager::get()->colorForIdx(score->m_color1));
 				g->setEndColor(GameManager::get()->colorForIdx(score->m_color2));
 				
@@ -367,10 +284,17 @@ class $modify(ProfilePage) {
 				}
 			}
 		}
-
-		#endif
 	}
 
+	void setupCommentsBrowser(cocos2d::CCArray* p0)
+	{
+		ProfilePage::setupCommentsBrowser(p0);
+
+		if (!Mod::get()->getSettingValue<bool>("apply-profiles") || Loader::get()->getLoadedMod("bitz.customprofiles"))
+			return;
+
+		updateCommentList();
+	}
 };
 
 class $modify (GJAccountSettingsLayer)
@@ -383,10 +307,11 @@ class $modify (GJAccountSettingsLayer)
 		if (!Mod::get()->getSettingValue<bool>("apply-profiles") || Loader::get()->getLoadedMod("bitz.customprofiles"))
 			return true;
 
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		auto l = m_mainLayer;
+		auto v = getChildOfType<CCScale9Sprite>(l, 0);
 
-		l->addChild(GradientPages::createGradientWithSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize()));
-		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
+		l->addChild(GradientPages::createGradientWithSize(v->getContentSize()));
+		v->setVisible(false);
 
 		return true;
 	}
@@ -402,14 +327,78 @@ class $modify(FRequestProfilePage) {
 		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
 			return true;
 
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		auto l = m_mainLayer;
+		auto v = getChildOfType<CCScale9Sprite>(l, 0);
 
-		l->addChild(GradientPages::createGradientWithSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize()));
-		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
+		l->addChild(GradientPages::createGradientWithSize(v->getContentSize()));
+		v->setVisible(false);
 
 		return true;
 	}
 
+	void setupCommentsBrowser(cocos2d::CCArray* p0)
+	{
+		FRequestProfilePage::setupCommentsBrowser(p0);
+
+		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
+			return;
+
+		auto m_list = getChildOfType<GJCommentListLayer>(m_mainLayer, 0);
+
+		if (!m_list)
+			return;
+
+		CCObject* child = nullptr;
+		CCARRAY_FOREACH(m_list->getChildren(), child)
+		{
+			if (typeinfo_cast<CCSprite*>(child))
+			{
+				as<CCSprite*>(child)->setVisible(false);
+			}
+		};
+
+		auto spr = CCScale9Sprite::createWithSpriteFrameName("comment-outline.png"_spr);
+		spr->setColor(ccc3(0, 0, 0));
+		spr->setOpacity(50);
+		spr->setContentSize(m_list->getContentSize() + ccp(3.5f, 3.5f));
+		spr->setAnchorPoint(ccp(0.5f, 0.5f));
+		spr->setPosition(m_list->getContentSize() / 2);
+		m_list->addChild(spr, 69);
+
+		if (!Mod::get()->getSettingValue<bool>("gradient-comments"))
+			return;
+
+		m_list->setColor(ccc3(0, 0, 0));
+		m_list->setOpacity(40);
+		
+		if (!m_list->m_list)
+			return;
+
+		if (!m_list->m_list->m_tableView)
+			return;
+
+		if (!m_list->m_list->m_tableView->m_contentLayer)
+			return;
+
+		if (auto content = m_list->m_list->m_tableView->m_contentLayer) // not sorry for this
+		{
+			if (!content->getChildren())
+				return;
+
+			int i = 0;
+			
+			CCARRAY_FOREACH(content->getChildren(), child)
+			{
+				if (auto cmt = typeinfo_cast<GJUserCell*>(child))
+				{
+					cmt->m_backgroundLayer->setColor(ccc3(0, 0, 0));
+					cmt->m_backgroundLayer->setOpacity(i % 2 ? 50 : 0);
+				}
+
+				i++;
+			};
+		}
+	}
 };
 
 class $modify(MessagesProfilePage) {
@@ -422,14 +411,78 @@ class $modify(MessagesProfilePage) {
 		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
 			return true;
 
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		auto l = m_mainLayer;
+		auto v = getChildOfType<CCScale9Sprite>(l, 0);
 
-		l->addChild(GradientPages::createGradientWithSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize()));
-		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
+		l->addChild(GradientPages::createGradientWithSize(v->getContentSize()));
+		v->setVisible(false);
 
 		return true;
 	}
 
+	void setupCommentsBrowser(cocos2d::CCArray* p0)
+	{
+		MessagesProfilePage::setupCommentsBrowser(p0);
+
+		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
+			return;
+
+		auto m_list = getChildOfType<GJCommentListLayer>(m_mainLayer, 0);
+
+		if (!m_list)
+			return;
+
+		CCObject* child = nullptr;
+		CCARRAY_FOREACH(m_list->getChildren(), child)
+		{
+			if (typeinfo_cast<CCSprite*>(child))
+			{
+				as<CCSprite*>(child)->setVisible(false);
+			}
+		};
+
+		auto spr = CCScale9Sprite::createWithSpriteFrameName("comment-outline.png"_spr);
+		spr->setColor(ccc3(0, 0, 0));
+		spr->setOpacity(50);
+		spr->setContentSize(m_list->getContentSize() + ccp(3.5f, 3.5f));
+		spr->setAnchorPoint(ccp(0.5f, 0.5f));
+		spr->setPosition(m_list->getContentSize() / 2);
+		m_list->addChild(spr, 69);
+
+		if (!Mod::get()->getSettingValue<bool>("gradient-comments"))
+			return;
+
+		m_list->setColor(ccc3(0, 0, 0));
+		m_list->setOpacity(40);
+		
+		if (!m_list->m_list)
+			return;
+
+		if (!m_list->m_list->m_tableView)
+			return;
+
+		if (!m_list->m_list->m_tableView->m_contentLayer)
+			return;
+
+		if (auto content = m_list->m_list->m_tableView->m_contentLayer) // not sorry for this
+		{
+			if (!content->getChildren())
+				return;
+
+			int i = 0;
+			
+			CCARRAY_FOREACH(content->getChildren(), child)
+			{
+				if (auto cmt = typeinfo_cast<GJMessageCell*>(child))
+				{
+					cmt->m_backgroundLayer->setColor(ccc3(0, 0, 0));
+					cmt->m_backgroundLayer->setOpacity(i % 2 ? 50 : 0);
+				}
+
+				i++;
+			};
+		}
+	}
 };
 
 class $modify(FriendsProfilePage) {
@@ -442,14 +495,78 @@ class $modify(FriendsProfilePage) {
 		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
 			return true;
 
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		auto l = m_mainLayer;
+		auto v = getChildOfType<CCScale9Sprite>(l, 0);
 
-		l->addChild(GradientPages::createGradientWithSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize()));
-		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
+		l->addChild(GradientPages::createGradientWithSize(v->getContentSize()));
+		v->setVisible(false);
 
 		return true;
 	}
 
+	void setupUsersBrowser(cocos2d::CCArray* p0, UserListType p1)
+	{
+		FriendsProfilePage::setupUsersBrowser(p0, p1);
+
+		if (!Mod::get()->getSettingValue<bool>("apply-profiles"))
+			return;
+
+		auto m_list = getChildOfType<GJCommentListLayer>(m_mainLayer, 0);
+
+		if (!m_list)
+			return;
+
+		CCObject* child = nullptr;
+		CCARRAY_FOREACH(m_list->getChildren(), child)
+		{
+			if (typeinfo_cast<CCSprite*>(child))
+			{
+				as<CCSprite*>(child)->setVisible(false);
+			}
+		};
+
+		auto spr = CCScale9Sprite::createWithSpriteFrameName("comment-outline.png"_spr);
+		spr->setColor(ccc3(0, 0, 0));
+		spr->setOpacity(50);
+		spr->setContentSize(m_list->getContentSize() + ccp(3.5f, 3.5f));
+		spr->setAnchorPoint(ccp(0.5f, 0.5f));
+		spr->setPosition(m_list->getContentSize() / 2);
+		m_list->addChild(spr, 69);
+
+		if (!Mod::get()->getSettingValue<bool>("gradient-comments"))
+			return;
+
+		m_list->setColor(ccc3(0, 0, 0));
+		m_list->setOpacity(40);
+		
+		if (!m_list->m_list)
+			return;
+
+		if (!m_list->m_list->m_tableView)
+			return;
+
+		if (!m_list->m_list->m_tableView->m_contentLayer)
+			return;
+
+		if (auto content = m_list->m_list->m_tableView->m_contentLayer) // not sorry for this
+		{
+			if (!content->getChildren())
+				return;
+
+			int i = 0;
+			
+			CCARRAY_FOREACH(content->getChildren(), child)
+			{
+				if (auto cmt = typeinfo_cast<GJUserCell*>(child))
+				{
+					cmt->m_backgroundLayer->setColor(ccc3(0, 0, 0));
+					cmt->m_backgroundLayer->setOpacity(i % 2 ? 50 : 0);
+				}
+
+				i++;
+			};
+		}
+	}
 };
 
 class $modify(InfoLayer) {
@@ -462,48 +579,77 @@ class $modify(InfoLayer) {
 		if (!Mod::get()->getSettingValue<bool>("apply-info-layer") || Loader::get()->getLoadedMod("bitz.customprofiles"))
 			return true;
 
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		auto l = m_mainLayer;
+		auto v = getChildOfType<CCScale9Sprite>(l, 0);
 
-		l->addChild(GradientPages::createGradientWithSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize()));
-		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
-
-		if (this->m_list->getContentSize().height <= 140) // im gonna be honest, i dont remember what this does and im afraid shit will break when i remove it
-		{
-			reinterpret_cast<CCNodeRGBA*>(l->getChildren()->objectAtIndex(3))->setColor({0, 0, 0});
-			reinterpret_cast<CCNodeRGBA*>(l->getChildren()->objectAtIndex(3))->setOpacity(100);
-		}		
+		l->addChild(GradientPages::createGradientWithSize(v->getContentSize(), score));
+		v->setVisible(false);
 
 		return true;
 	}
 
-};
-
-class $modify (GJCommentListLayer)
-{
-	static GJCommentListLayer* create(BoomListView* p0, char const* p1, cocos2d::_ccColor4B p2, float p3, float p4, bool p5)
+	void setupCommentsBrowser(cocos2d::CCArray* p0)
 	{
-		auto a = GJCommentListLayer::create(p0, p1, p2, p3, p4, p5);
+		InfoLayer::setupCommentsBrowser(p0);
 
-		if (Loader::get()->getLoadedMod("bitz.customprofiles"))
-			return a;
+		if (!Mod::get()->getSettingValue<bool>("apply-info-layer") || Loader::get()->getLoadedMod("bitz.customprofiles"))
+			return;
 
-		if (!(Mod::get()->getSettingValue<bool>("apply-profiles") || Mod::get()->getSettingValue<bool>("apply-info-layer")))
-			return a;
+		auto m_list = getChildOfType<GJCommentListLayer>(m_mainLayer, 0);
 
-		for (size_t i = 0; i < 4; i++)
+		if (!m_list)
+			return;
+
+		CCObject* child = nullptr;
+		CCARRAY_FOREACH(m_list->getChildren(), child)
 		{
-			reinterpret_cast<CCNode*>(a->getChildren()->objectAtIndex(i))->setVisible(false);
-		}
+			if (typeinfo_cast<CCSprite*>(child))
+			{
+				as<CCSprite*>(child)->setVisible(false);
+			}
+		};
 
 		auto spr = CCScale9Sprite::createWithSpriteFrameName("comment-outline.png"_spr);
 		spr->setColor(ccc3(0, 0, 0));
 		spr->setOpacity(50);
-		spr->setContentSize(a->getContentSize() + ccp(3.5f, 3.5f)); // i love random numbers that make no sense
+		spr->setContentSize(m_list->getContentSize() + ccp(3.5f, 3.5f));
 		spr->setAnchorPoint(ccp(0.5f, 0.5f));
-		spr->setPosition(a->getContentSize() / 2);
-		a->addChild(spr, 69);
+		spr->setPosition(m_list->getContentSize() / 2);
+		m_list->addChild(spr, 69);
 
-		return a;
+		if (!Mod::get()->getSettingValue<bool>("gradient-comments"))
+			return;
+
+		m_list->setColor(ccc3(0, 0, 0));
+		m_list->setOpacity(40);
+		
+		if (!m_list->m_list)
+			return;
+
+		if (!m_list->m_list->m_tableView)
+			return;
+
+		if (!m_list->m_list->m_tableView->m_contentLayer)
+			return;
+
+		if (auto content = m_list->m_list->m_tableView->m_contentLayer) // not sorry for this
+		{
+			if (!content->getChildren())
+				return;
+
+			int i = 0;
+			
+			CCARRAY_FOREACH(content->getChildren(), child)
+			{
+				if (auto cmt = typeinfo_cast<CommentCell*>(child))
+				{
+					cmt->m_backgroundLayer->setColor(ccc3(0, 0, 0));
+					cmt->m_backgroundLayer->setOpacity(i % 2 ? 50 : 0);
+				}
+
+				i++;
+			};
+		}
 	}
 };
 
@@ -517,10 +663,11 @@ class $modify (ItemInfoPopup)
 		if (!Mod::get()->getSettingValue<bool>("apply-unlock"))
 			return true;
 
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		auto l = m_mainLayer;
+		auto v = getChildOfType<CCScale9Sprite>(l, 0);
 
-		l->addChild(GradientPages::createGradientWithSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize()));
-		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
+		l->addChild(GradientPages::createGradientWithSize(v->getContentSize()));
+		v->setVisible(false);
 
 		return true;
 	}
@@ -536,10 +683,11 @@ class $modify (ShardsPage)
 		if (!Mod::get()->getSettingValue<bool>("apply-shards"))
 			return true;
 
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		auto l = m_mainLayer;
+		auto v = getChildOfType<CCScale9Sprite>(l, 0);
 
-		l->addChild(GradientPages::createGradientWithSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize()));
-		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
+		l->addChild(GradientPages::createGradientWithSize(v->getContentSize()));
+		v->setVisible(false);
 
 		return true;
 	}
@@ -555,10 +703,11 @@ class $modify (CommunityCreditsPage)
 		if (!Mod::get()->getSettingValue<bool>("apply-credits"))
 			return true;
 
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		auto l = m_mainLayer;
+		auto v = getChildOfType<CCScale9Sprite>(l, 0);
 
-		l->addChild(GradientPages::createGradientWithSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize()));
-		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
+		l->addChild(GradientPages::createGradientWithSize(v->getContentSize()));
+		v->setVisible(false);
 
 		return true;
 	}
@@ -578,10 +727,11 @@ class $modify (DemonFilterSelectLayer)
 		if (!Mod::get()->getSettingValue<bool>("apply-demon"))
 			return true;
 
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		auto l = m_mainLayer;
+		auto v = getChildOfType<CCScale9Sprite>(l, 0);
 
-		l->addChild(GradientPages::createGradientWithSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize()));
-		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
+		l->addChild(GradientPages::createGradientWithSize(v->getContentSize()));
+		v->setVisible(false);
 
 		return true;
 	}
@@ -597,10 +747,11 @@ class $modify (MoreSearchLayer)
 		if (!Mod::get()->getSettingValue<bool>("apply-filter"))
 			return true;
 
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		auto l = m_mainLayer;
+		auto v = getChildOfType<CCScale9Sprite>(l, 0);
 
-		l->addChild(GradientPages::createGradientWithSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize()));
-		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
+		l->addChild(GradientPages::createGradientWithSize(v->getContentSize()));
+		v->setVisible(false);
 
 		return true;
 	}
@@ -616,10 +767,11 @@ class $modify (ChallengesPage)
 		if (!Mod::get()->getSettingValue<bool>("apply-quests"))
 			return true;
 
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
+		auto l = m_mainLayer;
+		auto v = getChildOfType<CCScale9Sprite>(l, 0);
 
-		l->addChild(GradientPages::createGradientWithSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize()));
-		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
+		l->addChild(GradientPages::createGradientWithSize(v->getContentSize()));
+		v->setVisible(false);
 
 		return true;
 	}
@@ -635,13 +787,13 @@ class $modify (SetIDPopup)
 		if (!Mod::get()->getSettingValue<bool>("apply-pagesel"))
 			return true;
 
-		auto l = reinterpret_cast<CCLayer*>(this->getChildren()->objectAtIndex(0));
-		auto v = reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0));
+		auto l = m_mainLayer;
+		auto v = getChildOfType<CCScale9Sprite>(l, 0);
 
-		auto g = GradientPages::createGradientWithSize(reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->getContentSize());
+		auto g = GradientPages::createGradientWithSize(v->getContentSize());
 		g->setPosition(v->getPosition());
 		l->addChild(g);
-		reinterpret_cast<CCNode*>(l->getChildren()->objectAtIndex(0))->setVisible(false);
+		v->setVisible(false);
 
 		return true;
 	}
