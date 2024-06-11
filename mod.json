@@ -1,12 +1,12 @@
 {
-	"geode": "2.0.0-beta.27",
+	"geode": "3.0.0-alpha.2",
 	"gd": {
 		"win": "2.206",
         "mac": "2.206",
 		"android": "*"
 	},
 	"version": "v2.3.0",
-	"id": "TheSillyDoggo.GradientPages",
+	"id": "thesillydoggo.gradientpages",
 	"name": "Gradient Pages",
 	"developer": "TheSillyDoggo",
 	"description": "Adds Gradients to the back of some popups",
@@ -18,6 +18,13 @@
 			]
 		}
 	},
+    "incompatibilities": [
+        {
+            "id": "TheSillyDoggo.GradientPages",
+            "version": "*",
+            "importance": "superseded"
+        }
+    ],
 	"settings": {
         "gradient-comments": {
             "name": "Gradient in comments",
