@@ -26,10 +26,19 @@ class GradientPages
 
 		static CCNode* createGradientWithSize(CCPoint size, GJUserScore* score = nullptr)
 		{
+			auto node = CCNode::create();
+			node->setID("gradient-container"_spr);
+			node->setPosition(CCDirector::get()->getWinSize() / 2);
+			node->setAnchorPoint(ccp(0.5f, 0.5f));
+			node->setContentSize(size);
+			node->setZOrder(-69);
+
 			auto gradient = CCLayerGradient::create();
 			gradient->setContentSize(size);
-			gradient->setZOrder(-69);
+			gradient->setPosition(ccp(0, 0));
+			gradient->setAnchorPoint(ccp(0, 0));
 			gradient->setID("gradient"_spr);
+			gradient->ignoreAnchorPointForPosition(false);
 
 			if (Mod::get()->getSettingValue<bool>("use-custom-colours"))
 			{
@@ -42,9 +51,6 @@ class GradientPages
 				gradient->setEndColor(GameManager::get()->colorForIdx(GameManager::get()->m_playerColor2.value()));
 			}
 
-			gradient->setPosition(CCDirector::get()->getWinSize() / 2);
-			gradient->ignoreAnchorPointForPosition(false);
-
 			if (score)
 			{
 				gradient->setStartColor(GameManager::sharedState()->colorForIdx(score->m_color1));
@@ -54,22 +60,34 @@ class GradientPages
 			if (Mod::get()->getSettingValue<bool>("reverse-order"))
 			gradient->setScaleY(-1);
 
-			auto darken = CCScale9Sprite::createWithSpriteFrameName("square-fill.png"_spr);
+			auto darken = CCScale9Sprite::createWithSpriteFrameName(Mod::get()->getSettingValue<bool>("rounded-corners") ? "square-fill-rounded.png"_spr : "square-fill.png"_spr);
 			darken->setID("darken"_spr);
 			darken->setContentSize(size - ccp(15, 15));
 			darken->setZOrder(0);
 			darken->setPosition(size / 2);
 
-			auto outline = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
+			auto outline = Mod::get()->getSettingValue<bool>("rounded-corners") ? CCScale9Sprite::create("GJ_square07.png") : CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
 			outline->setPosition(size / 2);
 			outline->setContentSize(size);
 			outline->setZOrder(1);
 			outline->setID("outline"_spr);
-			
-			gradient->addChild(darken);
-			gradient->addChild(outline);
 
-			return gradient;
+			auto gg = CCScale9Sprite::create(Mod::get()->getSettingValue<bool>("rounded-corners") ? "GJ_square01.png" : "GJ_gradientBG.png");
+			gg->setContentSize(size - ccp(3, 3));
+			gg->setPosition(ccp(1.5f, 1.5f));
+			gg->setAnchorPoint(ccp(0, 0));
+
+			CCClippingNode* clippingNode = CCClippingNode::create();
+			clippingNode->setAlphaThreshold(0.05f);
+			clippingNode->setPosition(CCPointZero);
+			clippingNode->setStencil(gg);
+			clippingNode->addChild(gradient);
+			
+			node->addChild(clippingNode);
+			node->addChild(darken);
+			node->addChild(outline);
+			
+			return node;
 		}
 
 		static ccColor3B lerpColor(const ccColor3B& startColor, const ccColor3B& endColor, float t) {
@@ -159,8 +177,6 @@ class $modify(ProfilePageExt, ProfilePage) {
 
 		if (res)
 		{
-			GradientPages::macNode = nullptr;
-
 			if (!Mod::get()->getSettingValue<bool>("apply-profiles") || Loader::get()->getLoadedMod("bitz.customprofiles"))
 				return res;
 
@@ -196,23 +212,29 @@ class $modify(ProfilePageExt, ProfilePage) {
 			as<ProfilePageExt*>(res)->updateCommentList();
 
 			auto l = res->m_mainLayer;
+			auto size = ccp(440, 290);
+
+			auto node = CCNode::create();
+			node->setID("gradient-container"_spr);
+			node->setPosition(CCDirector::get()->getWinSize() / 2);
+			node->setAnchorPoint(ccp(0.5f, 0.5f));
+			node->setContentSize(ccp(440, 290));
+			node->setZOrder(-1);
 
 			auto gradient = CCLayerGradient::create();
 			
 			gradient->setStartColor({255, 0, 0});
 			gradient->setEndColor({0, 255, 0});
-			gradient->setZOrder(-1);
 			gradient->setID("gradient"_spr);
 			gradient->setOpacity(0);
-
-			gradient->setPosition(CCDirector::get()->getWinSize() / 2);
-			gradient->setContentSize(ccp(440, 290));
+			gradient->setPosition(size / 2);
+			gradient->setContentSize(size);
 			gradient->ignoreAnchorPointForPosition(false);
 
 			if (Mod::get()->getSettingValue<bool>("reverse-order"))
 				gradient->setScaleY(-1);
 
-			auto darken = CCScale9Sprite::createWithSpriteFrameName("square-fill.png"_spr);
+			auto darken = CCScale9Sprite::createWithSpriteFrameName(Mod::get()->getSettingValue<bool>("rounded-corners") ? "square-fill-rounded.png"_spr : "square-fill.png"_spr);
 			darken->setID("darken"_spr);
 			darken->setContentSize(gradient->getContentSize() - ccp(15, 15));
 			darken->setZOrder(0);
@@ -220,21 +242,30 @@ class $modify(ProfilePageExt, ProfilePage) {
 			darken->setAnchorPoint(gradient->getAnchorPoint());
 			darken->setOpacity(0);
 
-			auto bg = CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
+			auto bg = Mod::get()->getSettingValue<bool>("rounded-corners") ? CCScale9Sprite::create("GJ_square07.png") : CCScale9Sprite::createWithSpriteFrameName("square-outline.png"_spr);
 			bg->setPosition(gradient->getContentSize() / 2);
 			bg->setContentSize(ccp(440, 290));
 			bg->setZOrder(1);
 			bg->setID("bg"_spr);
 
-			gradient->addChild(bg, 42069);
-			gradient->addChild(darken);
-			l->addChild(gradient);
+			auto gg = CCScale9Sprite::create(Mod::get()->getSettingValue<bool>("rounded-corners") ? "GJ_square01.png" : "GJ_gradientBG.png");
+			gg->setContentSize(ccp(440, 290) - ccp(3, 3));
+			gg->setPosition(ccp(1.5f, 1.5f));
+			gg->setAnchorPoint(ccp(0, 0));
+
+			CCClippingNode* clippingNode = CCClippingNode::create();
+			clippingNode->setAlphaThreshold(0.05f);
+			clippingNode->setPosition(CCPointZero);
+			clippingNode->setStencil(gg);
+			clippingNode->addChild(gradient);
+
+			node->addChild(clippingNode);
+			node->addChild(darken);
+			node->addChild(bg, 42069);
+
+			l->addChild(node);
 			
-			if (GradientPages::score == nullptr)
-			{
-				log::info("hasn't loaded profile info yet :(");
-			}
-			else
+			if (GradientPages::score)
 			{
 				gradient->setStartColor(GameManager::get()->colorForIdx(GradientPages::score->m_color1));
 				gradient->setEndColor(GameManager::get()->colorForIdx(GradientPages::score->m_color2));
@@ -261,25 +292,31 @@ class $modify(ProfilePageExt, ProfilePage) {
 
 		if (l)
 		{
-			auto g = as<CCLayerGradient*>(l->getChildByID("gradient"_spr));
-
-			if (g)
+			if (auto container = l->getChildByID("gradient-container"_spr))
 			{
-				auto d = as<CCScale9Sprite*>(g->getChildByID("darken"_spr));
-
-				g->setStartColor(GameManager::get()->colorForIdx(score->m_color1));
-				g->setEndColor(GameManager::get()->colorForIdx(score->m_color2));
-				
-				if (g->getOpacity() == 0)
+				if (auto gCont = getChildOfType<CCClippingNode>(container, 0))
 				{
-					g->runAction(CCFadeTo::create(0.25f, 255));
-				}
+					auto g = as<CCLayerGradient*>(gCont->getChildByID("gradient"_spr));
 
-				if (d)
-				{
-					if (d->getOpacity() == 0)
+					if (g)
 					{
-						d->runAction(CCFadeTo::create(0.25f, 255));
+						auto d = as<CCScale9Sprite*>(container->getChildByID("darken"_spr));
+
+						g->setStartColor(GameManager::get()->colorForIdx(score->m_color1));
+						g->setEndColor(GameManager::get()->colorForIdx(score->m_color2));
+						
+						if (g->getOpacity() == 0)
+						{
+							g->runAction(CCFadeTo::create(0.25f, 255));
+						}
+
+						if (d)
+						{
+							if (d->getOpacity() == 0)
+							{
+								d->runAction(CCFadeTo::create(0.25f, 255));
+							}
+						}
 					}
 				}
 			}

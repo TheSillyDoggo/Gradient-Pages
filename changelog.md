@@ -1,3 +1,7 @@
+# 2.3.1
+
+- Added Rounded Corners (optional)
+
 # 2.3.0
 
 - Added 2.206 support
